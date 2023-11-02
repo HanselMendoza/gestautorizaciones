@@ -1,0 +1,59 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="AutoMapper" Version="12.0.1" />
+    <PackageReference Include="AutoMapper.Extensions.Microsoft.DependencyInjection" Version="12.0.1" />
+    <PackageReference Include="FluentValidation" Version="11.7.1" />
+    <PackageReference Include="MediatR" Version="12.1.1" />
+    <PackageReference Include="FluentValidation.DependencyInjectionExtensions" Version="11.7.1" />
+    <PackageReference Include="Microsoft.AspNetCore.Http" Version="2.2.2" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="6.0.22" />
+    <PackageReference Include="System.Data.SqlClient" Version="4.8.5" />
+    <PackageReference Include="AuthenticationAPI.Driver" Version="1.0.2" />
+    <PackageReference Include="System.Text.Json" Version="6.0.8" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\GestionAutorizaciones.Domain\GestionAutorizaciones.Domain.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Remove="Asegurado\" />
+    <None Remove="Asegurado\DTOs\" />
+    <None Remove="Asegurado\Handlers\" />
+    <None Remove="Asegurado\Interfaces\" />
+    <None Remove="Asegurado\MappingProfiles\" />
+    <None Remove="Asegurado\Queries\" />
+    <None Remove="Asegurado\Validators\" />
+    <None Remove="Autorizaciones\" />
+    <None Remove="Autorizaciones\Commands\" />
+    <None Remove="Autorizaciones\DTOs\" />
+    <None Remove="Autorizaciones\Handlers\" />
+    <None Remove="Autorizaciones\Interfaces\" />
+    <None Remove="Autorizaciones\MappingProfiles\" />
+    <None Remove="Autorizaciones\Queries\" />
+    <None Remove="Autorizaciones\Validators\" />
+    <None Remove="Behavior\" />
+    <None Remove="Prestador\" />
+    <None Remove="Procedimientos\" />
+    <None Remove="Procedimientos\DTOs\" />
+    <None Remove="Procedimientos\Handlers\" />
+    <None Remove="Procedimientos\Interfaces\" />
+    <None Remove="Procedimientos\MappingProfiles\" />
+    <None Remove="Procedimientos\Commands\" />
+    <None Remove="Procedimientos\Validators\" />
+    <None Remove="Precertificaciones\" />
+    <None Remove="Precertificaciones\Commands\" />
+    <None Remove="Precertificaciones\DTOs\" />
+    <None Remove="Precertificaciones\Handlers\" />
+    <None Remove="Precertificaciones\Interfaces\" />
+    <None Remove="Precertificaciones\Queries\" />
+    <None Remove="Precertificaciones\Validators\" />
+    <None Remove="Common\Enums\" />
+    <None Remove="Common\Paginacion\" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Common\Enums\" />
+    <Folder Include="Common\Paginacion\" />
+  </ItemGroup>
+</Project>

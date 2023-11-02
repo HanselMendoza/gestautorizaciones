@@ -1,0 +1,92 @@
+name: $(BuildID)
+trigger:
+  branches:
+    include:
+      - develop
+      - main
+      - qa
+
+variables:
+  tag: "$(Build.BuildId)"
+  imageRepository: "gestion-autorizaciones"
+  containerRegistry: "acrhumanointermediary.azurecr.io"
+  dockerfilePath: "**/Dockerfile"
+  acrServiceConnection: "acrhumanointermediary"
+
+stages:
+  - stage: Sonar
+    displayName: Análisis Sonar
+    jobs:
+      - job: SonarJob
+        condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/develop'))
+        steps:
+          - task: SonarQubePrepare@5
+            displayName: "Paparando Sonar..."
+            inputs:
+              SonarQube: 'sonarqubeConnection'
+              scannerMode: 'MSBuild'
+              projectKey: 'Autorizaciones_gestion-autorizaciones_AYmDPz_M7P5wQ4pmM56w'
+              projectName: 'gestion-autorizaciones'
+          - task: DotNetCoreCLI@2
+            displayName: ".NET Project Restore"
+            inputs:
+              command: 'restore'
+              projects: '**/*.csproj'
+              feedsToUse: 'select'
+          - task: DotNetCoreCLI@2
+            displayName: ".NET Build release"
+            inputs:
+              command: 'build'
+              projects: '**/*.csproj'
+              arguments: '--configuration Release'
+          - task: SonarQubeAnalyze@5
+            displayName: "Analizando con Sonar..."
+            inputs:
+              jdkversion: 'JAVA_HOME_11_X64'
+          - task: SonarQubePublish@5
+            displayName: "Publicando análisis de Sonar..."
+            inputs:
+              pollingTimeoutSec: '300'
+          #
+  - stage: Build
+    displayName: Build Docker Image
+    jobs:
+      - job: Build
+        displayName: Build job
+        pool:
+          vmImage: "ubuntu-latest"
+        steps:
+          - task: Docker@2
+            displayName: 'Build'
+            inputs:
+              command: build
+              repository: $(imageRepository)
+              dockerfile: $(dockerfilePath)
+              containerRegistry: $(acrServiceConnection)
+              tags: $(tag)
+
+          - task: Docker@2
+            displayName: Push
+            inputs:
+              command: push
+              repository: $(imageRepository)
+              containerRegistry: $(acrServiceConnection)
+              tags: $(tag)
+          #
+  - stage: GitOps
+    displayName: Modify manifest with the new Docker image
+    jobs:
+      - job: Ops
+        steps:
+          - checkout: git://Autorizaciones/gestion-autorizaciones-gitops
+            persistCredentials: true
+          - bash: |
+              git config --global user.email "devops@azure.com"
+              git config --global user.name "Azure DevOps pipeline"
+              git checkout $(Build.SourceBranchName)
+              kubectl patch --local -f k8s/deployment.yaml -p '{"spec":{"template":{"spec":{"containers":[{"name":"gestion-autorizaciones-ctr","image":"$(containerRegistry)/$(imageRepository):$(tag)"}]}}}}' -o yaml > temp.yaml && mv temp.yaml k8s/deployment.yaml
+              cat k8s/deployment.yaml
+              git add . 
+              git commit -m "Update $(imageRepository) to $(tag)"
+              git push
+            displayName: Update manifest

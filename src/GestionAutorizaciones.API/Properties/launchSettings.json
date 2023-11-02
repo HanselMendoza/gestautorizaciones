@@ -1,0 +1,32 @@
+{
+  "profiles": {
+    "IIS Express": {
+      "commandName": "IISExpress",
+      "launchBrowser": true,
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "CONNECTION_STRING": "User Id=AUTORIZACIONES;Password=kMKOR6uR5V*;Data Source=172.24.207.144:1521/HUCORE;Connection Timeout=30",
+        "HOST_AUTHENTICATION_API": "http://172.24.205.236:32777"
+      }
+    },
+    "GestionAutorizaciones.API": {
+      "commandName": "Project",
+      "launchBrowser": true,
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "CONNECTION_STRING": "User Id=AUTORIZACIONES;Password=kMKOR6uR5V*;Data Source=172.24.207.144:1521/HUCORE;Connection Timeout=30",
+        "HOST_AUTHENTICATION_API": "http://172.24.205.236:32777"
+      },
+      "applicationUrl": "http://localhost:5000"
+    }
+  },
+  "$schema": "http://json.schemastore.org/launchsettings.json",
+  "iisSettings": {
+    "windowsAuthentication": false,
+    "anonymousAuthentication": true,
+    "iisExpress": {
+      "applicationUrl": "http://localhost:25352",
+      "sslPort": 44359
+    }
+  }
+}

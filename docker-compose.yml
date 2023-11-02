@@ -1,0 +1,16 @@
+version: "3.7"
+services:
+  api:
+    image: hudkregister.humano.local:5005/autorizaciones/gestion-autorizaciones:$TAG_IMAGE
+    container_name: gestion-autorizaciones
+    restart: on-failure:5
+    ports:
+      - ${API_PORT}:80
+    environment:
+      - CONNECTION_STRING=${CONNECTION_STRING}
+      - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT}
+      - HOST_AUTHENTICATION_API=${HOST_AUTHENTICATION_API}
+networks:
+  default:
+    external:
+        name: gestion-autorizaciones_network

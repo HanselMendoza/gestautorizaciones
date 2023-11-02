@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+  </PropertyGroup>
+  <ItemGroup>
+    <None Remove="Entities\" />
+    <None Remove="Entities\Enums\" />
+    <None Remove="Entities\Request\" />
+    <None Remove="Entities\Response\" />
+    <None Remove="Extensions\" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Entities\Request\" />
+    <Folder Include="Extensions\" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,175 @@
+variables:
+  OBJECTS_DIRECTORY: 'obj'
+  NUGET_PACKAGES_DIRECTORY: '.nuget'
+  SOURCE_CODE_PATH: '*/*/'
+  TZ: 'America/Santo_Domingo'
+
+
+cache:
+  # Per-stage and per-branch caching.
+  key: "$CI_JOB_STAGE-$CI_COMMIT_REF_SLUG"
+  paths:
+    # Specify three paths that should be cached:
+    #
+    # 1) Main JSON file holding information about package dependency tree, packages versions,
+    # frameworks etc. It also holds information where to the dependencies were restored.
+    - '$SOURCE_CODE_PATH$OBJECTS_DIRECTORY/project.assets.json'
+    # 2) Other NuGet and MSBuild related files. Also needed.
+    - '$SOURCE_CODE_PATH$OBJECTS_DIRECTORY/*.csproj.nuget.*'
+    # 3) Path to the directory where restored dependencies are kept.
+    - '$NUGET_PACKAGES_DIRECTORY'
+  policy: pull-push
+
+stages:
+  - sonar
+  - pruebas
+  - build
+  - deploy
+
+analisis-sonar-job:
+  stage: sonar
+  tags:
+    - gestion-autorizaciones_dev
+  image: hudkregister.humano.local:5005/humano/buildtools/sonnarqube-scanners/dotnetcore/sdk:3.1
+  variables:
+    SONAR_USER_HOME: "${CI_PROJECT_DIR}/.sonar"  # Defines the location of the analysis task cache
+    GIT_DEPTH: "0"  # Tells git to fetch all the branches of the project, required by the analysis task
+  cache:
+    key: "${CI_JOB_NAME}"
+    paths:
+      - .sonar/cache
+  script: 
+      - dotnet restore --packages $NUGET_PACKAGES_DIRECTORY
+      - "export PATH=\"$PATH:$HOME/.dotnet/tools\""
+      - "dotnet sonarscanner begin /k:\"autorizaciones_gestion-autorizaciones_AYD7rHHySmnDhfFFZRI2\" /d:sonar.login=\"$SONAR_TOKEN\" /d:\"sonar.host.url=$SONAR_HOST_URL\" "
+      - "dotnet build"
+      - "dotnet sonarscanner end /d:sonar.login=\"$SONAR_TOKEN\""
+  allow_failure: true
+  only:
+    - develop
+    - /^feature.*$/
+
+pruebas-unitarias-job:
+  stage: pruebas
+  tags:
+    - gestion-autorizaciones_dev
+  image: hudkregister.humano.local:5005/humano/buildtools/sonnarqube-scanners/dotnetcore/sdk:3.1
+  script:
+    - echo "Ejecutando pruebas unitarias...."
+    - dotnet restore --packages $NUGET_PACKAGES_DIRECTORY
+    - dotnet test --no-restore
+  allow_failure: true
+  only:
+    - develop
+    - /^feature.*$/
+
+migraciones-db-job:
+  stage: pruebas
+  tags:
+    - gestion-autorizaciones_dev
+  image: hudkregister.humano.local:5005/humano/buildtools/sonnarqube-scanners/dotnetcore/sdk:3.1
+  variables:
+    MIGRATION_PROJECT: 'GestionAutorizaciones.Migrations'
+    ASPNETCORE_ENVIRONMENT: $ASPNETCORE_ENVIRONMENT_DEV
+    CONNECTION_STRING: $CONNECTION_STRING_DEV
+  script:
+    - dotnet restore --packages $NUGET_PACKAGES_DIRECTORY
+    - echo "Corriendo migraciones db...."
+    - dotnet run  --no-launch-profile --project ./src/$MIGRATION_PROJECT/$MIGRATION_PROJECT.csproj -d up
+  when: manual
+  allow_failure: true
+  only:
+    - develop
+
+# Develop
+build-and-push-job:
+  variables:
+    GIT_CLONE_PATH: $CI_BUILDS_DIR/$CI_PROJECT_NAME
+    GIT_STRATEGY: clone
+  stage: build
+  tags:
+    - gestion-autorizaciones_build
+  script:
+    - pwd
+    - docker login -u gitlab-ci-token -p $CI_JOB_TOKEN $CI_REGISTRY
+    - docker build -t hudkregister.humano.local:5005/autorizaciones/gestion-autorizaciones:$TAG_IMAGE_DEV -f Dockerfile .
+    - docker push hudkregister.humano.local:5005/autorizaciones/gestion-autorizaciones:$TAG_IMAGE_DEV
+  only:
+    - develop
+
+deploy-dev-job:
+  variables:
+    GIT_CLONE_PATH: $CI_BUILDS_DIR/$CI_PROJECT_NAME
+    GIT_STRATEGY: none
+  stage: deploy
+  tags:
+    - gestion-autorizaciones_deploy
+  script:
+    - pwd
+    - chmod +x ./setup_env.sh
+    - ./setup_env.sh DEV
+    - docker-compose -f docker-compose.yml up -d
+  only:
+    - develop
+
+# QA
+build-and-push-qa-job:
+  variables:
+    GIT_CLONE_PATH: $CI_BUILDS_DIR/$CI_PROJECT_NAME
+    GIT_STRATEGY: clone
+  stage: build
+  tags:
+    - gestion-autorizaciones_build_qa
+  script:
+    - pwd
+    - docker login -u gitlab-ci-token -p $CI_JOB_TOKEN $CI_REGISTRY
+    - docker build -t hudkregister.humano.local:5005/autorizaciones/gestion-autorizaciones:$TAG_IMAGE_QA -f Dockerfile .
+    - docker push hudkregister.humano.local:5005/autorizaciones/gestion-autorizaciones:$TAG_IMAGE_QA
+  only:
+    - qa
+
+deploy-qa-job:
+  variables:
+    GIT_CLONE_PATH: $CI_BUILDS_DIR/$CI_PROJECT_NAME
+    GIT_STRATEGY: none
+  stage: deploy
+  tags:
+    - gestion-autorizaciones_deploy_qa
+  script:
+    - pwd
+    - chmod +x ./setup_env.sh
+    - ./setup_env.sh QA
+    - docker-compose -f docker-compose.yml up -d
+  only:
+    - qa
+
+# PROD
+build-and-push-prod-job:
+  variables:
+    GIT_CLONE_PATH: $CI_BUILDS_DIR/$CI_PROJECT_NAME
+    GIT_STRATEGY: clone
+  stage: build
+  tags:
+    - build_prod
+  script:
+    - pwd
+    - docker login -u gitlab-ci-token -p $CI_JOB_TOKEN $CI_REGISTRY
+    - docker build -t hudkregister.humano.local:5005/autorizaciones/gestion-autorizaciones:$TAG_IMAGE_PROD -f Dockerfile .
+    - docker push hudkregister.humano.local:5005/autorizaciones/gestion-autorizaciones:$TAG_IMAGE_PROD
+  only:
+    - master
+
+deploy-prod-job:
+  variables:
+    GIT_CLONE_PATH: $CI_BUILDS_DIR/$CI_PROJECT_NAME
+    GIT_STRATEGY: none
+  stage: deploy
+  tags:
+    - deploy_prod
+  script:
+    - pwd
+    - chmod +x ./setup_env.sh
+    - ./setup_env.sh PROD
+    - docker-compose -f docker-compose.yml up -d
+  only:
+    - master
